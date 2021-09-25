@@ -1,0 +1,11 @@
+{
+  "dependencies": {
+    "chart.js": "^3.5.1",
+    "chartjs-adapter-date-fns": "^2.0.0",
+    "chartjs-plugin-zoom": "^1.1.1",
+    "date-fns": "^2.24.0"
+  },
+  "devDependencies": {
+    "browserify": "^17.0.0"
+  }
+}
