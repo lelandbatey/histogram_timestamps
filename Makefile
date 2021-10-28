@@ -7,8 +7,11 @@ histogram_timestamps: templates.go
 templates.go: bundle.js index.html external_deps
 	go-bindata -o templates.go index.html bundle.js
 
-bundle.js:
+bundle.js: ./jsbuild/node_modules
 	./jsbuild/build_bundle_for_makefile.sh
+
+./jsbuild/node_modules:
+	cd ./jsbuild/; npm install
 
 .PHONY: external_deps
 external_deps:

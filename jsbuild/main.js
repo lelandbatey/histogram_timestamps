@@ -37,20 +37,7 @@ function numbers(config) {
 
   return data;
 }
-function hourlyPoints(config) {
-  const ys = numbers(config);
-  const start = new Date().valueOf();
-  return ys.map((y, i) => ({x: datefns.addHours(start, i), y}));
-}
 const rand255 = () => Math.round(Math.random() * 255);
-function randomColor(alpha) {
-  return 'rgba(' + rand255() + ',' + rand255() + ',' + rand255() + ',' + (alpha || '.3') + ')';
-}
-
-// Parsable with datefns.parse(basicdates[n], 'yyyy-MM-dd HH:mm', new Date())
-var basicdates = [
-    '2021-09-25 14:01'
-];
 
 
 const zoomOptions = {
@@ -70,77 +57,18 @@ const zoomOptions = {
 const panStatus = () => zoomOptions.pan.enabled ? 'enabled' : 'disabled';
 const zoomStatus = () => zoomOptions.zoom.drag.enabled ? 'enabled' : 'disabled';
 
-/*
-const NUMBER_CFG = {count: 500, min: 0, max: 1000};
-const data = {
-  datasets: [{
-    label: 'My First dataset',
-    borderColor: randomColor(0.4),
-    backgroundColor: randomColor(0.1),
-    pointBorderColor: randomColor(0.7),
-    pointBackgroundColor: randomColor(0.5),
-    pointBorderWidth: 1,
-    data: hourlyPoints(NUMBER_CFG),
-  }]
-};
-const scales = {
-  x: {
-    position: 'bottom',
-    type: 'time',
-    ticks: {
-      autoSkip: true,
-      autoSkipPadding: 50,
-      maxRotation: 0
-    },
-    time: {
-      displayFormats: {
-        hour: 'HH:mm',
-        minute: 'HH:mm',
-        second: 'HH:mm:ss'
-      }
-    }
-  },
-  y: {
-    position: 'right',
-    ticks: {
-      callback: (val, index, ticks) => index === 0 || index === ticks.length - 1 ? null : val,
-    },
-    grid: {
-      borderColor: randomColor(1),
-      color: 'rgba( 0, 0, 0, 0.1)',
-    },
-    title: {
-      display: true,
-      text: (ctx) => ctx.scale.axis + ' axis',
-    }
-  },
-};
-const config = {
-  type: 'scatter',
-  data: data,
-  options: {
-    scales: scales,
-    plugins: {
-      zoom: zoomOptions,
-      title: {
-        display: true,
-        position: 'bottom',
-        text: (ctx) => 'Zoom: ' + zoomStatus() + ', Pan: ' + panStatus()
-      }
-    },
-  }
-};
-*/
 
 const LABEL_LOCALTZ = 'Timeseries #1 - Local time zone ('+Intl.DateTimeFormat().resolvedOptions().timeZone+')';
 const LABEL_UTC = 'Timeseries #1 - UTC';
+
+const LINE_COLOR = 'rgb(54, 162, 235)';
 
 const data = {
     datasets: [
         {
             label: LABEL_LOCALTZ,
             data: CONTEXT.data,
-            borderColor: 'rgb(255, 99, 132)',
+            borderColor: LINE_COLOR,
         }
     ],
 };
@@ -151,6 +79,10 @@ const config = {
     options: {
         parsing: true,
         responsive: false,
+        animation: {
+            // Massively speed up all the default animations
+            duration: 200,
+        },
         scales: {
             x: {
                 type: 'timeseries',
@@ -184,7 +116,7 @@ const actions = [
             chart.data.datasets[0] = {
                 label: exp_label,
                 data: CONTEXT.data,
-                borderColor: 'rgb(255, 99, 132)',
+                borderColor: LINE_COLOR,
             };
             chart.update();
         },
@@ -207,11 +139,17 @@ const actions = [
             chart.data.datasets[0] = {
                 label: exp_label,
                 data: nd,
-                borderColor: 'rgb(255, 99, 132)',
+                borderColor: LINE_COLOR,
             };
             chart.update();
         },
     },
+    {
+        name: 'Reset zoom',
+        handler(chart) {
+            chart.resetZoom();
+        },
+    }
 ];
 
 actions.forEach((a, i) => {

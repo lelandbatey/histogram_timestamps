@@ -44,7 +44,9 @@ func GenRandomTimestamps(count int, seed int64, start_ts int64, stop_ts int64, d
 	if dist == "random" {
 		getrand = func() int64 { return clamp(int64(rnd.Float64()*float64(range_))+start_ts, start_ts, stop_ts) }
 	} else if dist == "normal" {
-		getrand = func() int64 { return clamp(int64(rnd.NormFloat64()*float64(range_/4))+start_ts, start_ts, stop_ts) }
+		getrand = func() int64 {
+			return clamp(int64(rnd.NormFloat64()*float64(range_/8))+start_ts+(range_/2), start_ts, stop_ts)
+		}
 	} else {
 		return nil, fmt.Errorf("distribution %q specified in dist is not valid", dist)
 	}
@@ -53,7 +55,7 @@ func GenRandomTimestamps(count int, seed int64, start_ts int64, stop_ts int64, d
 	for i := 0; i < count; i++ {
 		tss = append(tss, getrand())
 	}
-	return nil, nil
+	return tss, nil
 }
 
 func SimpleRandomTimestamps(count int, hours_duration int) ([]int64, error) {

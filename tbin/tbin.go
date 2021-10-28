@@ -52,7 +52,7 @@ var ABBREV_TO_DELT map[string]int64 = map[string]int64{
 	"ms": TD_1_ms,
 }
 
-var ABBREV_SMALL_TO_LARGE []string = []string{"Y", "W", "D", "h", "m", "s", "ms"}
+var ABBREV_LARGE_TO_SMALL []string = []string{"Y", "W", "D", "h", "m", "s", "ms"}
 
 // Maps the time abbreviations originally taken from Pandas onto the time
 // abbreviations needed by ChartJS:
@@ -94,7 +94,21 @@ func BinTimestamps(tss []int64, freq string) (map[int64]int64, error) {
 		if _, ok := hist[bin]; !ok {
 			hist[bin] = 0
 		}
-		hist[bin] += 1
+		hist[bin] = hist[bin] + 1
+	}
+	sort.SliceStable(tss, func(i, j int) bool { return tss[i] < tss[j] })
+	// We can ignore errors because if there were errors they'd have been
+	// caught on these inputs already.
+	delt := ABBREV_TO_DELT[TIMEDELTA_ABBREVS[freq]]
+	minbin, _ := BinTimestamp(tss[0], freq)
+	maxbin, _ := BinTimestamp(tss[len(tss)-1], freq)
+	cur := minbin
+	for cur < maxbin {
+		cur += delt
+		cb, _ := BinTimestamp(cur, freq)
+		if _, ok := hist[cb]; !ok {
+			hist[cb] = 0
+		}
 	}
 	return hist, nil
 }
@@ -115,22 +129,32 @@ func FormatBinDataForChartJS(bins map[int64]int64) (ChartJSCtx, error) {
 		keys = append(keys, k)
 	}
 	sort.SliceStable(keys, func(i, j int) bool { return keys[i] < keys[j] })
-	dur := keys[len(keys)-1] - keys[0]
-	unit := "ms"
-	for _, abrv := range ABBREV_SMALL_TO_LARGE {
-		delt := ABBREV_TO_DELT[abrv]
-		// The smallest unit which still divides the duration of the bins into
-		// a whole integer
-		if (dur / delt) < 1 {
-			break
-		}
-		unit = abrv
-	}
-	jsunit := ABBREV_TO_CHARTJS_UNIT[unit]
+	_, jsunit := EstimateBinSize(keys)
 	for _, k := range keys {
 		v := bins[k]
 		ctx.Data = append(ctx.Data, ChartJSDatapoint{X: k, Y: v})
 	}
 	ctx.Unit = jsunit
 	return ctx, nil
+}
+
+// EstimateBinSize returns two abbreviations for duration. The first is an
+// abbreviation appropriate to get a timedelta duration from ABBREV_TO_DELT,
+// while the second is a ChartJS compatible abbreviation
+func EstimateBinSize(tss []int64) (string, string) {
+	sort.SliceStable(tss, func(i, j int) bool { return tss[i] < tss[j] })
+	dur := tss[len(tss)-1] - tss[0]
+	unit := "ms"
+	for _, abrv := range ABBREV_LARGE_TO_SMALL {
+		delt := ABBREV_TO_DELT[abrv]
+		// The smallest unit which still divides the duration of the bins into
+		// a whole integer
+		if (dur / delt) < 1 {
+			continue
+		}
+		unit = abrv
+		break
+	}
+	jsunit := ABBREV_TO_CHARTJS_UNIT[unit]
+	return unit, jsunit
 }
