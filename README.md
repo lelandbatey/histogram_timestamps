@@ -1,19 +1,30 @@
-# What's the idea?
+# Histogram Timestamps
 
-basic idea is to also write a Go program which will do the actual parsing and
-binning of the time-series data, then render a single static HTML page with two
-script tags, one with the binned data in JSON form assigned to a global
-variable, the second containing the full contents of `bundle.js`. They should
-be on that page in that order so that we can be sure about the order of
-interpretation. The code in the `bundle.js` will always look for data in the
-global variable that'll be defined in the first script tag.
+You ever find yourself working with a dataset and you want to graph a
+particular aspect of that data over time, but because you're dealing with a lot
+of data and in a weird format, there's no good tool to graph and visualize that
+data? This is the problem `histogram_timestamps` is meant to solve! If you can
+get the timestamps of anything, you can pipe them into `histogram_timestamps`
+to view trends in that data over time. Here are example questions answerable
+with `histogram_timestamps`:
 
-# How to rebuild bundle.js?
+- *"Hmmmm, we had a lot of broken data created last night; how can I see when it started vs when it grew out of control? There's no metric for this broken data because it's caused by a bug, but I can find all the broken rows in the DB with a query. If only I could graph that somehow..."*
+	- Well with `histogram_timestamps`, you can! Run a `select created_time from table ...` command and pipe those timestamps straight into `histogram_timestamps` in order to instantly generate an interactive graph of all that data through time.
 
-bundle.js is built from main.js . To build `bundle.js`, use the following command:
+# Installation
+
 ```
-$(npm bin)/browserify main.js -o bundle.js
+git clone https://github.com/lelandbatey/histogram_timestamps.git
+cd histogram_timestamps
+make install # Does require you have NPM installed to build the JS portion, but once pre-built the binary is totaly self-contained
 ```
 
-- I used this linked document as basis for how to structure this project, since I want it to be possible to "self-contain".  https://medium.com/jeremy-keeshin/hello-world-for-javascript-with-npm-modules-in-the-browser-6020f82d1072
+# Usage
 
+As an example of usage, you can have `histogram_timestamps` generate some fake data which you feed back into `histogram_timestamps`. Examples:
+
+```
+./histogram_timestamps --generate-fake-data | ./histogram_timestamps
+./histogram_timestamps --generate-fake-data | ./histogram_timestamps --unit minute
+./histogram_timestamps --generate-fake-data | ./histogram_timestamps --unit hour
+```
