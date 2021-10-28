@@ -1,6 +1,3 @@
-// var Chart = require('chart.js');
-//import { Chart } from 'chart.js';
-//import zoomPlugin from 'chartjs-plugin-zoom';
 var Chart = require('chart.js');
 require('chartjs-plugin-zoom');
 var datefns = require('date-fns')
@@ -73,6 +70,7 @@ const zoomOptions = {
 const panStatus = () => zoomOptions.pan.enabled ? 'enabled' : 'disabled';
 const zoomStatus = () => zoomOptions.zoom.drag.enabled ? 'enabled' : 'disabled';
 
+/*
 const NUMBER_CFG = {count: 500, min: 0, max: 1000};
 const data = {
   datasets: [{
@@ -132,42 +130,94 @@ const config = {
     },
   }
 };
-
-var ctx = document.getElementById('myChart').getContext('2d');
-var myChart = new Chart(ctx, config);
-/*
-    {
-    type: 'bar',
-    data: {
-        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-        datasets: [{
-            label: '# of Votes',
-            data: [12, 19, 3, 5, 2, 3],
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.2)',
-                'rgba(54, 162, 235, 0.2)',
-                'rgba(255, 206, 86, 0.2)',
-                'rgba(75, 192, 192, 0.2)',
-                'rgba(153, 102, 255, 0.2)',
-                'rgba(255, 159, 64, 0.2)'
-            ],
-            borderColor: [
-                'rgba(255, 99, 132, 1)',
-                'rgba(54, 162, 235, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(153, 102, 255, 1)',
-                'rgba(255, 159, 64, 1)'
-            ],
-            borderWidth: 1
-        }]
-    },
-    options: {
-        scales: {
-            y: {
-                beginAtZero: true
-            }
-        }
-    }
-});
 */
+
+const LABEL_LOCALTZ = 'Timeseries #1 - Local time zone ('+Intl.DateTimeFormat().resolvedOptions().timeZone+')';
+const LABEL_UTC = 'Timeseries #1 - UTC';
+
+const data = {
+    datasets: [
+        {
+            label: LABEL_LOCALTZ,
+            data: CONTEXT.data,
+            borderColor: 'rgb(255, 99, 132)',
+        }
+    ],
+};
+
+const config = {
+    type: 'line',
+    data: data,
+    options: {
+        parsing: true,
+        responsive: false,
+        scales: {
+            x: {
+                type: 'timeseries',
+                time: {unit: CONTEXT.unit},
+            },
+        },
+        plugins: {
+            zoom: zoomOptions,
+            title: {
+                display: true,
+                position: 'bottom',
+                text: (ctx) => 'Zoom: ' + zoomStatus() + ', Pan: ' + panStatus()
+            }
+        },
+    },
+};
+
+const ctx = document.getElementById('myChart').getContext('2d');
+const myChart = new Chart(ctx, config);
+function convertDateToUTC(date_) {
+    return new Date(date_.getUTCFullYear(), date_.getUTCMonth(), date_.getUTCDate(), date_.getUTCHours(), date_.getUTCMinutes(), date_.getUTCSeconds());
+}
+const actions = [
+    {
+        name: "Set TZ to local timezone",
+        handler(chart) {
+            let exp_label = LABEL_LOCALTZ;
+            if (chart.data.datasets[0].label == exp_label) {
+                return;
+            }
+            chart.data.datasets[0] = {
+                label: exp_label,
+                data: CONTEXT.data,
+                borderColor: 'rgb(255, 99, 132)',
+            };
+            chart.update();
+        },
+    },
+    {
+        name: "Set TZ to UTC",
+        handler(chart) {
+            let exp_label = LABEL_UTC;
+            if (chart.data.datasets[0].label == exp_label) {
+                return;
+            }
+            var nd = [];
+            for (var i = 0; i < CONTEXT.data.length; i++) {
+                nd.push({
+                    x: convertDateToUTC(new Date(CONTEXT.data[i].x)).getTime(),
+                    y: CONTEXT.data[i].y,
+                });
+            }
+            console.log(nd);
+            chart.data.datasets[0] = {
+                label: exp_label,
+                data: nd,
+                borderColor: 'rgb(255, 99, 132)',
+            };
+            chart.update();
+        },
+    },
+];
+
+actions.forEach((a, i) => {
+  let button = document.createElement("button");
+  button.id = "button"+i;
+  button.innerText = a.name;
+  button.onclick = () => a.handler(myChart);
+  document.querySelector(".buttons").appendChild(button);
+});
