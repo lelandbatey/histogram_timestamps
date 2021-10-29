@@ -81,13 +81,11 @@ func main() {
 		*unit, _ = tbin.EstimateBinSize(tss)
 	}
 
-	fmt.Printf("Binning with unit %q\n", *unit)
 	bins, err := tbin.BinTimestamps(tss, *unit)
 	if err != nil {
 		fmt.Printf("cannot divide timestamps into bins: %q", err.Error())
 		os.Exit(2)
 	}
-	fmt.Printf("Number of bins: %d\n", len(bins))
 
 	ctx, err := tbin.FormatBinDataForChartJS(bins)
 	if err != nil {

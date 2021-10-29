@@ -94,7 +94,7 @@ const config = {
             title: {
                 display: true,
                 position: 'bottom',
-                text: (ctx) => 'Zoom: ' + zoomStatus() + ', Pan: ' + panStatus()
+                text: (ctx) => 'Zoom: (click and drag)' + zoomStatus() + ', Pan (ctrl + click and drag): ' + panStatus()
             }
         },
     },
