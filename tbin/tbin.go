@@ -3,6 +3,8 @@ package tbin
 import (
 	"fmt"
 	"sort"
+	"strconv"
+	"unicode"
 )
 
 const TD_1_ms int64 = 1
@@ -72,22 +74,19 @@ var ABBREV_TO_CHARTJS_UNIT map[string]string = map[string]string{
 // giving you the "bin" where this timestamp belongs in a histogram with bins
 // of size 'frequency'. If 'frequency' does not stand for a known bin-size,
 // then an error is returned.
-func BinTimestamp(ts int64, freq string) (int64, error) {
-	abbrev, ok := TIMEDELTA_ABBREVS[freq]
-	if !ok {
-		return 0, fmt.Errorf("no timedelta configured for frequency of %q", freq)
+func BinTimestamp(ts int64, spec string) (int64, error) {
+	mult, delt, err := ParseSpec(spec)
+	if err != nil {
+		return 0, err
 	}
-	delt, ok := ABBREV_TO_DELT[abbrev]
-	if !ok {
-		return 0, fmt.Errorf("no timedelta configured for frequency of %q leading to abbrev %q", freq, abbrev)
-	}
-	return (ts / delt) * delt, nil
+	d := delt * mult
+	return (ts / d) * d, nil
 }
 
-func BinTimestamps(tss []int64, freq string) (map[int64]int64, error) {
+func BinTimestamps(tss []int64, spec string) (map[int64]int64, error) {
 	hist := map[int64]int64{}
 	for _, ts := range tss {
-		bin, err := BinTimestamp(ts, freq)
+		bin, err := BinTimestamp(ts, spec)
 		if err != nil {
 			return nil, err
 		}
@@ -97,15 +96,17 @@ func BinTimestamps(tss []int64, freq string) (map[int64]int64, error) {
 		hist[bin] = hist[bin] + 1
 	}
 	sort.SliceStable(tss, func(i, j int) bool { return tss[i] < tss[j] })
-	// We can ignore errors because if there were errors they'd have been
-	// caught on these inputs already.
-	delt := ABBREV_TO_DELT[TIMEDELTA_ABBREVS[freq]]
-	minbin, _ := BinTimestamp(tss[0], freq)
-	maxbin, _ := BinTimestamp(tss[len(tss)-1], freq)
+	mult, basedelt, err := ParseSpec(spec)
+	if err != nil {
+		return nil, err
+	}
+	delt := mult * basedelt
+	minbin, _ := BinTimestamp(tss[0], spec)
+	maxbin, _ := BinTimestamp(tss[len(tss)-1], spec)
 	cur := minbin
 	for cur < maxbin {
 		cur += delt
-		cb, _ := BinTimestamp(cur, freq)
+		cb, _ := BinTimestamp(cur, spec)
 		if _, ok := hist[cb]; !ok {
 			hist[cb] = 0
 		}
@@ -157,4 +158,34 @@ func EstimateBinSize(tss []int64) (string, string) {
 	}
 	jsunit := ABBREV_TO_CHARTJS_UNIT[unit]
 	return unit, jsunit
+}
+
+func ParseSpec(unit string) (mult int64, delt int64, err error) {
+	rs := []rune(unit)
+	var numbers []rune
+	var letters []rune
+	for _, r := range rs {
+		if unicode.IsNumber(r) {
+			numbers = append(numbers, r)
+		} else {
+			letters = append(letters, r)
+		}
+	}
+	if len(numbers) == 0 {
+		mult = 1
+	} else {
+		mult, err = strconv.ParseInt(string(numbers), 10, 64)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+	abbrev, ok := TIMEDELTA_ABBREVS[string(letters)]
+	if !ok {
+		return 0, 0, fmt.Errorf("no timedelta configured for abbreviation of %q", string(letters))
+	}
+	delt, ok = ABBREV_TO_DELT[abbrev]
+	if !ok {
+		return 0, 0, fmt.Errorf("no timedelta configured for frequency of %q leading to abbrev %q", string(letters), abbrev)
+	}
+	return mult, delt, nil
 }
