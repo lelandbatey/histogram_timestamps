@@ -15,7 +15,7 @@ bundle.js: ./jsbuild/node_modules
 
 .PHONY: external_deps
 external_deps:
-	go get -u github.com/kevinburke/go-bindata/go-bindata
+	go install github.com/kevinburke/go-bindata/go-bindata@latest
 
 .PHONY: clean
 clean:
