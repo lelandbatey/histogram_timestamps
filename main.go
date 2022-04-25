@@ -29,7 +29,7 @@ var (
 	generateData = pflag.BoolP("generate-fake-data", "g", false, "If provided, all the program will do is generate a bunch of fake timestamps and print them on stdout. Useful as a way to feed known input to another histogram_timestamps")
 	unit         = pflag.StringP("unit", "u", "auto", "The duration of each 'bin' to group timestamps into: https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases")
 	strptimefmt  = pflag.StringP("strptime-fmt", "f", "", "A strptime-compatible date format specifier. Use if your data isn't formatted as integer milliseconds since epoch.")
-	helpFlag     = pflag.BoolP("help", "h", false, "Print usage")
+	helpFlag     = pflag.BoolP("help", "h", false, "Print usage and exit")
 )
 
 func smax(v interface{}, l int) string {
@@ -40,26 +40,57 @@ func smax(v interface{}, l int) string {
 	return s[:l]
 }
 
+func PrintUsage() {
+	// This copy-paste of the code from pflag.Usage() is done so we can
+	// wrap our usage messages automatically.
+	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+	usages := pflag.CommandLine.FlagUsagesWrapped(90)
+	fmt.Fprintf(os.Stderr, usages)
+	fmt.Fprintf(os.Stderr, `
+Examples:
+
+	# Generate a graph with some fake data
+	$ %s --generate-fake-data | %s
+
+	# Graph the data in 1-minute wide bins
+	$ %s --generate-fake-data | %s --unit 1minute
+
+	# Parse timestamps in a custom format
+	$ cat /tmp/file_with_timestamps | %s --strptime-fmt "%%Y-%%m-%%dT%%H:%%M:%%S.%%f"
+
+`, os.Args[0], os.Args[0], os.Args[0], os.Args[0], os.Args[0])
+}
+
 func main() {
 	pflag.Parse()
 	if *helpFlag {
-		pflag.Usage()
+		PrintUsage()
 		os.Exit(0)
 	}
 	if *generateData {
-		tss, err := tbin.SimpleRandomTimestamps(10000, 12)
+		tss, err := tbin.SimpleRandomTimestamps(10000, 36)
 		if err != nil {
 			fmt.Printf("cannot generate random timestamps: %q", err.Error())
 			os.Exit(2)
 		}
 		for _, ts := range tss {
-			fmt.Printf("%d\n", ts)
+			if *strptimefmt != "" {
+				fmt.Printf("%s\n", timefmt.Format(time.UnixMilli(ts).UTC(), *strptimefmt))
+			} else {
+				fmt.Printf("%d\n", ts)
+			}
 		}
 		os.Exit(0)
 	}
 	if isatty.IsTerminal(os.Stdin.Fd()) {
-		fmt.Printf("You must pipe the timestamps into this program on stdin; since stdin is a terminal, exiting.\n\n")
-		pflag.Usage()
+		fmt.Printf("You must pipe the timestamps into this program\non stdin; since stdin is a terminal, exiting.\n")
+		fmt.Printf(`
+    HINT: to see an example interactive graph, run the following command
+
+        %s --generate-fake-data | %s
+
+`, os.Args[0], os.Args[0])
+		PrintUsage()
 		os.Exit(1)
 	}
 	// 1. read stdin for lines of text
@@ -150,6 +181,14 @@ func main() {
 	}
 }
 
+// read_lines_to_integers attempts to parse each non-empty lines in r as a time
+// formatted according to `format`. The `format` parameter is a strptime (see
+// manpage for strptime(3)) compatible string. Each integer in the output
+// represents a count of milliseconds since UNIX epoch.
+//
+// If `format` is an empty string, then each line of `r` is assumed to be a
+// string representing a moment in time as a count of milliseconds since UNIX
+// epoch.
 func read_lines_to_integers(r io.Reader, format string) ([]int64, error) {
 	tss := []int64{}
 	scnr := bufio.NewScanner(r)
@@ -166,14 +205,16 @@ func read_lines_to_integers(r io.Reader, format string) ([]int64, error) {
 		if format == "" {
 			ts, err = strconv.ParseInt(line, 10, 64)
 			if err != nil {
+				fmt.Fprint(os.Stderr, GuessTimestampFormat(line))
 				return nil, fmt.Errorf("cannot parse integer on line %d of stdin: %w\n", i, err)
 			}
 		} else {
 			t, err := timefmt.Parse(line, format)
 			if err != nil {
+				fmt.Fprint(os.Stderr, GuessTimestampFormat(line))
 				return nil, fmt.Errorf("cannot parse line %d of stdin to date: %w", i, err)
 			}
-			ts = t.UnixNano() / 1000000
+			ts = t.UnixMilli()
 		}
 		tss = append(tss, ts)
 	}
@@ -197,4 +238,34 @@ func openbrowser(url string) {
 		log.Printf("cannot launch web browser: %v\n", err)
 	}
 
+}
+
+func GuessTimestampFormat(line string) string {
+	hinttempl := `
+HINT: It looks like the timestamp '%s' is in format '%s'. To parse
+all the incoming timestamps as format '%s', provide the following option:
+
+    --strptime-fmt '%s'
+
+`
+	type tsfmt struct {
+		Name string
+		Fmt  string
+	}
+	potenials := []tsfmt{
+		{"RFC3339", "%Y-%m-%dT%H:%M:%S.%f%z"},
+		{"RFC3339", "%Y-%m-%dT%H:%M:%S%z"},
+		{"YYYY-mm-dd HH:MM:SS.ms", "%Y-%m-%d %H:%M:%S.%f"},
+		{"YYYY-mm-dd HH:MM:SS.ms TZ", "%Y-%m-%d %H:%M:%S.%f %z"},
+		{"YYYY-mm-dd HH:MM:SS", "%Y-%m-%d %H:%M:%S"},
+		{"YYYY-mm-dd HH:MM:SS TZ", "%Y-%m-%d %H:%M:%S %z"},
+		{"YYYY-mm-dd", "%Y-%m-%d"},
+	}
+	for _, candidate := range potenials {
+		_, err := timefmt.Parse(line, candidate.Fmt)
+		if err == nil {
+			return fmt.Sprintf(hinttempl, line, candidate.Name, candidate.Name, candidate.Fmt)
+		}
+	}
+	return "HINT: Use the '--strptime-format' flag to indicate the format of the incoming timestamps\n\n"
 }

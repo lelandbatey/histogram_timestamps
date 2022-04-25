@@ -47,6 +47,12 @@ func TestParseSpec(t *testing.T) {
 			ExpErr:  nil,
 		},
 		{
+			Spec:    "1h",
+			ExpMult: 1,
+			ExpDelt: TD_1_hr,
+			ExpErr:  nil,
+		},
+		{
 			Spec:    "1",
 			ExpMult: 0,
 			ExpDelt: 0,
