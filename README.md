@@ -1,7 +1,10 @@
 <p align="center">
   <a href="https://github.com/lelandbatey/histogram_timestamps">
-    <img src="https://user-images.githubusercontent.com/1964720/165003930-89c6f4ef-b481-4c38-9036-b898c5093ffe.png" width="400px"/>
+    <img src="https://user-images.githubusercontent.com/1964720/165003930-89c6f4ef-b481-4c38-9036-b898c5093ffe.png" width="200px"/>
   </a>
+  <p align="center">
+    <img src="https://user-images.githubusercontent.com/1964720/165175499-148d2296-2699-4f54-a0b7-fdc250c544d4.gif" align="center">
+  </p>
 </p>
 
 
