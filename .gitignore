@@ -5,3 +5,5 @@ bundle.js
 histogram_timestamps
 templates.go
 
+
+dist/

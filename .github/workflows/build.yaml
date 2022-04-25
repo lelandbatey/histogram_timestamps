@@ -28,10 +28,6 @@ jobs:
         run: |
           go install github.com/goreleaser/goreleaser@latest
       -
-        name: Install make
-        run: |
-          sudo apt-get install make
-      -
         name: Build static JS file and package into templates.go
         run: |
           make all
