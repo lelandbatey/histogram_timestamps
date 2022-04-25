@@ -78,7 +78,8 @@ const config = {
     data: data,
     options: {
         parsing: true,
-        responsive: false,
+        responsive: true,
+        maintainAspectRatio: false,
         animation: {
             // Massively speed up all the default animations
             duration: 200,
