@@ -69,12 +69,15 @@ const data = {
             label: LABEL_LOCALTZ,
             data: CONTEXT.data,
             borderColor: LINE_COLOR,
+            backgroundColor: LINE_COLOR,
+            barPercentage: 0.99,
+            categoryPercentage: 0.9,
         }
     ],
 };
 
 const config = {
-    type: 'line',
+    type: 'bar',
     data: data,
     options: {
         parsing: true,
@@ -118,6 +121,9 @@ const actions = [
                 label: exp_label,
                 data: CONTEXT.data,
                 borderColor: LINE_COLOR,
+                backgroundColor: LINE_COLOR,
+                barPercentage: 0.99,
+                categoryPercentage: 0.9,
             };
             chart.update();
         },
@@ -141,6 +147,9 @@ const actions = [
                 label: exp_label,
                 data: nd,
                 borderColor: LINE_COLOR,
+                backgroundColor: LINE_COLOR,
+                barPercentage: 0.99,
+                categoryPercentage: 0.9,
             };
             chart.update();
         },

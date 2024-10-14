@@ -4,7 +4,7 @@ all: histogram_timestamps
 histogram_timestamps: bundle.js index.html main.go tbin/tbin.go timeformat/timeformat.go
 	go build
 
-bundle.js: ./jsbuild/node_modules
+bundle.js: ./jsbuild/node_modules ./jsbuild/main.js
 	./jsbuild/build_bundle_for_makefile.sh
 
 ./jsbuild/node_modules:
