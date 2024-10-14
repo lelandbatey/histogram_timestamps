@@ -141,13 +141,18 @@ func FormatBinDataForChartJS(bins map[int64]int64) (ChartJSCtx, error) {
 
 // EstimateBinSize returns two abbreviations for duration. The first is an
 // abbreviation appropriate to get a timedelta duration from ABBREV_TO_DELT,
-// while the second is a ChartJS compatible abbreviation
+// while the second is a ChartJS compatible abbreviation.
+// Note that this isn't a very good way to estimate the bin size, as it doesn't
+// account for the density of data over the minimum time span. For example, if
+// the data spans a period of 2 days, this'll bin that data into just two bins,
+// one for each day, because the 48 hour duration of the data divides nicely
+// into day long segments.
 func EstimateBinSize(tss []int64) (string, string) {
 	sort.SliceStable(tss, func(i, j int) bool { return tss[i] < tss[j] })
-	dur := tss[len(tss)-1] - tss[0]
+	var dur int64 = tss[len(tss)-1] - tss[0]
 	unit := "ms"
 	for _, abrv := range ABBREV_LARGE_TO_SMALL {
-		delt := ABBREV_TO_DELT[abrv]
+		var delt int64 = ABBREV_TO_DELT[abrv]
 		// The smallest unit which still divides the duration of the bins into
 		// a whole integer
 		if (dur / delt) < 1 {

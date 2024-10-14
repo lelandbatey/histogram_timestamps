@@ -16,6 +16,6 @@ ORIGINAL_DIR="${PWD}"
 
 cd "${SCRIPT_DIR}"
 
-$(npm bin)/browserify main.js -o ../bundle.js
+npm exec -- browserify main.js -o "${SCRIPT_DIR}/../bundle.js"
 
 echo "bundle.js has been successfully written to the directory '${SCRIPT_DIR}/../'"

@@ -96,7 +96,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	parsefunc, _, err := timeformat.NewFuncs(strptimefmt, gotimefmt)
+	parsefunc, _, err := timeformat.NewFuncs(*strptimefmt, *gotimefmt)
 	if err != nil {
 		fmt.Printf("cannot figure out how to parse the ")
 	}
@@ -148,8 +148,8 @@ func main() {
 	}
 	defer f.Close()
 
-	jslib := MustAssetString("bundle.js")
-	html_tmplfile := MustAssetString("index.html")
+	jslib := BundleJS
+	html_tmplfile := IndexHTML
 
 	html_tmplfile = strings.ReplaceAll(html_tmplfile, "REPLACE_ME_WITH_JS_CONTEXT", string(ctxjson))
 	html_tmplfile = strings.ReplaceAll(html_tmplfile, "REPLACE_ME_WITH_BUNDLEJS", jslib)
@@ -190,8 +190,12 @@ func main() {
 }
 
 // read_lines_to_integers attempts to parse each non-empty lines in r as a time
-// parsable by . Each integer in the output
-// represents a count of milliseconds since UNIX epoch.
+// parsable by parsefunc. Each integer in the output represents a count of
+// milliseconds since UNIX epoch.
+//
+// If a line fails to parse, then an error is returned. Before returning though,
+// a hint is printed on stderr to the user indicating what that line's timestamp
+// format _should_ have been, via our best guess.
 func read_lines_to_integers(r io.Reader, parsefunc func(string) (time.Time, error)) ([]int64, error) {
 	tss := []int64{}
 	scnr := bufio.NewScanner(r)

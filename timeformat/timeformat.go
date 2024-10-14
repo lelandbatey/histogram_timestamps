@@ -19,16 +19,18 @@ type ParseFunc func(string) (time.Time, error)
 // return different results given the same input, if they desire).
 type FmtFunc func(time.Time) (string, error)
 
-func NewFuncs(strptimefmt, gotimefmt *string) (ParseFunc, FmtFunc, error) {
-	if strptimefmt == nil && gotimefmt == nil {
+// NewFuncs tries its best to give you funcs that parse your input and format your output the way
+// you want based on the command-line flag inputs.
+func NewFuncs(strptimefmt, gotimefmt string) (ParseFunc, FmtFunc, error) {
+	if strptimefmt == "" && gotimefmt == "" {
 		return parseUnixMillis, fmtUnixMillis, nil
 	}
 
-	if gotimefmt != nil {
-		return makeParseGotime(*gotimefmt), makeFmtGotime(*gotimefmt), nil
+	if gotimefmt != "" {
+		return makeParseGotime(gotimefmt), makeFmtGotime(gotimefmt), nil
 	}
-	if strptimefmt != nil {
-		return makeParseStrptime(*strptimefmt), makeFmtStrptime(*strptimefmt), nil
+	if strptimefmt != "" {
+		return makeParseStrptime(strptimefmt), makeFmtStrptime(strptimefmt), nil
 	}
 	return nil, nil, fmt.Errorf("logically you shouldn't be able to get this error; congratulations!")
 }
@@ -68,6 +70,10 @@ func makeFmtGotime(sfmt string) FmtFunc {
 	}
 }
 
+// GuessStrptimeFormat checks if your timestamp can be parsed by any commonly
+// used strptime formats. If the input line DOES match a commonly known strptime
+// format, then the name and strptime-compatible formatting string (e.g.
+// '%Y-%m-%d') is returned. Otherwise, an error is returned.
 func GuessStrptimeFormat(line string) (string, string, error) {
 	type tsfmt struct {
 		Name string
