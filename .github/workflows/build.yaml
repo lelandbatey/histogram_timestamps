@@ -4,6 +4,11 @@ on:
   push:
     tags:
       - '*'
+# 2024-10-14: To debug this Github Action, I recommend running the `act` program like so to use a
+# reasonable approximation of the Github `ubuntu-latest` image.
+#     act -P ubuntu-latest=catthehacker/ubuntu:act-latest
+# Note that the above will fail at the last step as `act` doesn't make the GH_ACCESS_TOKEN
+# available, but it'll show that all the prior build steps work on your machine.
 jobs:
   release_via_goreleaser:
     runs-on: ubuntu-latest
@@ -23,6 +28,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '16'
+      -
+        name: Update CA dependencies
+        run: |
+          sudo update-ca-certificates
       -
         name: Install goreleaser
         run: |
