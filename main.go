@@ -166,8 +166,9 @@ func main() {
 			fmt.Printf("cannot determine abs path to temporary directory: %q", err.Error())
 			os.Exit(2)
 		}
-		fullFP := filepath.Join(absp, f.Name())
+		fullFP := filepath.Join(absp, filepath.Base(f.Name()))
 		mux.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+			log.Printf("Serving file at %q\n", fullFP)
 			http.ServeFile(w, req, fullFP)
 		})
 	}
